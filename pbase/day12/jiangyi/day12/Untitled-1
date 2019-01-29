@@ -1,0 +1,13 @@
+def make_closure():
+    a  = 1
+    b = 2
+    c = 3
+    d = 4
+    ...
+
+    z = 10000
+    def myfun(x):
+         return x * z
+    return myfun
+
+myclosure = make_closure()

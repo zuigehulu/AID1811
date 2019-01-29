@@ -1,0 +1,120 @@
+前情回顾
+
+1. http协议
+   响应 ： 响应行  响应头  空行  响应体
+
+   http_server 
+      * 接收浏览器请求
+      * 查看请求内容
+      * 将一个网页返回给浏览器
+
+2. IO分类
+    阻塞IO : 默认的IO形态 ，效率低
+    非阻塞IO：设置非阻塞行为，超时检测
+       setblocking(False)
+       settimeout()
+
+    IO多路复用：通过同时监控多个IO，选择可执行的处理
+                ，以此提高执行效率
+       
+       select（rlist,wlist,xlist[,timeout]）
+       poll
+       epoll
+***************************************************
+
+poll方法
+
+p = select.poll()
+功能： 生成poll对象
+返回值： poll对象
+
+p.register(fd,event)
+功能： 注册要监控的IO事件
+参数： fd 要监控的IO对象
+       event 选择要关注的事件类别
+          常用：POLLIN   读IO事件 rlist
+	        POLLOUT  写IO事件 wlist
+		POLLERR  出错IO  xlist
+		POLLHUP  断开连接事件
+
+          e.g.  p.register(s,POLLIN|POLLERR)
+
+p.unregister(fd)
+功能： 取消对IO的监控
+参数： IO对象或者文件描述符
+
+events = p.poll()
+功能： 监控所有注册的IO
+返回值： events 是一个列表，返回所有就绪的IO
+         [(fileno,event),(fileno,event),....]
+         每个就绪IO都会在系列表中形成一个元组
+	 第一项为IO的fileno，第二项为就绪事件
+
+* 需要配合查找字典通过fileno获取事件对象处理IO
+  e.g.  {s.fileno():s} 确保字典包含所有注册IO 
+
+poll_server步骤：
+
+1.创建套接字
+2.注册套接字为关注IO
+3.创建查找字典，并维护
+4.循环监控IO发生
+5.处理发生的IO事件
+
+epoll方法
+
+使用方法： 基本与poll方法相同
+* 将生成对象的poll改为epoll
+* 将所有事件改为epoll类型事件
+
+epoll特点：
+  * epoll的效率比select和poll要高
+  * epoll可以监控的io比select poll要多
+  * epoll的触发方式要多 EPOLLET(边缘触发) 。默认三种方   法都是水平触发（实际select poll只有水平触发）
+
+    水平触发：当IO事件发生时会一直提醒用户处理，直到           处理完毕
+    边缘触发：当IO事件完发生时提醒用户处理，如果没有           处理则不会持续提醒，而是下一次再有IO事            件就绪时再一同请求用户处理
+
+struct模块
+
+功能 ： 将一组数据进行结构化打包发送
+原理 ： 将数据转换为bytes格式发送，接收到的bytes格式         数据也可以按照一定的数据类型解析
+
+Struct(fmt)
+功能： 生成struct对象
+参数： fmt  定值的数据结构组成
+        e.g.  要发的数据： 1  zhang   1.75
+	      fmt数据结构： Struct（'i5sf'）
+
+	      python类型  fmt
+	         int       i
+		 float     f
+		 bytes    ns (n表示n个字符)
+
+st.pack(v1,v2,v3.....)
+功能： 将一组数据按照指定格式打包
+参数： 要打包的数据
+返回值： 返回打包后的bytes字串
+
+e.g.   st.pack(1,b'zhang',1.75)
+
+st.unpack(bytes_data)
+功能：将一个bytes字串解包
+参数： 要解析的bytes
+返回值： 解析后的内容
+
+* 可以使用struct模块直接调用pack  unpack函数
+  struct.pack(fmt,v1,v2,v3...)
+  struct.unpach(fmt,bytes_data)
+  
+  e.g.  struct.pack('i5sf',1,b'zhang',1.75)
+        struct.unpack('i5sf',data)
+
+
+本地套接字
+
+功能： 本机两个程序之间进行数据传输
+
+创建流程
+    1. 创建本地套接字
+       soc

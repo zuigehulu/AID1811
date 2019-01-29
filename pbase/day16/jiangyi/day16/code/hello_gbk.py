@@ -1,0 +1,5 @@
+# -*- coding:gbk -*-
+
+print("hello жпнд")
+
+
